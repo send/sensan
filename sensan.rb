@@ -4,6 +4,8 @@ require 'ruboty'
 require 'capybara'
 require 'capybara/poltergeist'
 require 'faraday'
+require 'open-uri'
+require 'nokogiri'
 
 class GyazoSpector
   CONTENT_TYPE = 'image/png'.freeze
@@ -52,6 +54,76 @@ class GyazoSpector
   end
 end
 
+class Nekogiri
+  class NekoError < StandardError; end
+  def initialize(url)
+    charset = nil
+    html = open(url) do |io|
+      charset = io.charset
+      io.read
+    end
+    @document = Nokogiri::HTML.parse(html, nil, charset)
+  end
+
+  def first_node(options = {}, &block)
+    node =
+      if options.key?(:xpath)
+        @document.xpath(options[:xpath])[0]
+      elsif options.key?(:css)
+        @document.css(options[:css])[0]
+      else
+        raise ArgumentError
+      end
+
+    block.call(node) if block_given? rescue raise NekoError
+  rescue NekoError
+    'えらー！'
+  end
+end
+
+module Forecast
+  MY_GYAZO = 'http://gyazo.send.sh'.freeze
+  TARGET_PAGE = 'http://weather.yahoo.co.jp/weather/jp/13/4410/13103.html'.freeze
+  NOW_PAGE = 'http://www.tenki.jp/forecast/3/16/4410/13103.html'.freeze
+  XPATHS = {
+    temp: '//table[@class="live_point_amedas_ten_summary_entries"]/tr/td[@class="temp_entry"]',
+    precip: '//table[@class="live_point_amedas_ten_summary_entries"]/tr/td[@class="precip_entry"]'
+  }.freeze
+  SELECTORS = {
+    today: 'div#yjw_pinpoint_today',
+    tomorrow: 'div#yjw_pinpoint_tomorrow',
+    weekly: 'div#yjw_week',
+  }.freeze
+
+  def self.now
+    doc = Nekogiri.new(NOW_PAGE)
+    temp = doc.first_node(xpath: XPATHS[:temp]) { |node| "#{node.text.strip} ど" }
+    precip = doc.first_node(xpath: XPATHS[:precip]) do |node|
+      (node.text.strip.to_f > 0.0) ?  'あめめ！' : 'ふってない！'
+    end
+
+    "#{temp}\t#{precip}"
+  end
+
+  def self.today
+    GyazoSpector.new(site: MY_GYAZO).capture(
+      TARGET_PAGE, selector: SELECTORS[:today]
+    ).upload!
+  end
+
+  def self.tomorrow
+    GyazoSpector.new(site: MY_GYAZO).capture(
+      TARGET_PAGE, selector: SELECTORS[:tomorrow]
+    ).upload!
+  end
+
+  def self.weekly
+    GyazoSpector.new(site: MY_GYAZO).capture(
+      TARGET_PAGE, selector: SELECTORS[:weekly]
+    ).upload!
+  end
+end
+
 module Ruboty
   module Handlers
     class Sensan < Base
@@ -84,6 +156,7 @@ module Ruboty
         response = "にゃー\n"
         response <<
           case message[:text]
+          when /いまの|今の/ then Forecast.now
           when /きょうの|今日の/ then Forecast.today
           when /あしたの|明日の/ then Forecast.tomorrow
           else Forecast.weekly
@@ -98,32 +171,6 @@ module Ruboty
 
       def do_nothing
         nil
-      end
-
-      module Forecast
-        MY_GYAZO = 'http://gyazo.send.sh'
-        TARGET_PAGE = 'http://weather.yahoo.co.jp/weather/jp/13/4410/13103.html'
-
-        def self.today
-          GyazoSpector.new(site: MY_GYAZO).capture(
-            TARGET_PAGE,
-            selector: 'div#yjw_pinpoint_today',
-          ).upload!
-        end
-
-        def self.tomorrow
-          GyazoSpector.new(site: MY_GYAZO).capture(
-            TARGET_PAGE,
-            selector: 'div#yjw_pinpoint_tomorrow',
-          ).upload!
-        end
-
-        def self.weekly
-          GyazoSpector.new(site: MY_GYAZO).capture(
-            TARGET_PAGE,
-            selector: 'div#yjw_week',
-          ).upload!
-        end
       end
     end
   end
