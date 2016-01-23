@@ -35,8 +35,9 @@ class GyazoSpector
     @session ||= Capybara::Session.new(:poltergeist)
   end
 
-  def capture(url, options = {})
+  def capture(url, options = {}, &block)
     session.visit(url)
+    block.call(@session) if block_given?
     @imagedata = Base64.decode64(session.driver.render_base64(:png, options))
     self
   end
@@ -122,6 +123,14 @@ module Forecast
       TARGET_PAGE, selector: SELECTORS[:weekly]
     ).upload!
   end
+
+  def self.amesh
+    GyazoSpector.new(site: MY_GYAZO).capture(
+      'http://tokyo-ame.jwa.or.jp/', selector: 'div#map'
+    ) do |page|
+      page.execute_script "changeArea('004');"
+    end.upload!
+  end
 end
 
 module Ruboty
@@ -140,7 +149,7 @@ module Ruboty
       def handle_message(message)
         case message[:text]
         when /ping/i then do_nothing
-        when /てんき|天気/ then weather(message)
+        when /てんき|天気|アメッシュ|あめっしゅ/ then weather(message)
         when /\A(?:何歳|なんさい|いくつ)(?:になったの)?(?:\?|？)/ then how_old(message)
         else
           default_action(message)
@@ -159,6 +168,7 @@ module Ruboty
           when /いまの|今の/ then Forecast.now
           when /きょうの|今日の/ then Forecast.today
           when /あしたの|明日の/ then Forecast.tomorrow
+          when /あめっしゅ|アメッシュ/ then Forecast.amesh
           else Forecast.weekly
           end
 
