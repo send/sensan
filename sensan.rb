@@ -128,7 +128,9 @@ module Forecast
     GyazoSpector.new(site: MY_GYAZO).capture(
       'http://tokyo-ame.jwa.or.jp/', selector: 'div#map'
     ) do |page|
+      sleep(1)
       page.execute_script "changeArea('004');"
+      sleep(1)
     end.upload!
   end
 end
