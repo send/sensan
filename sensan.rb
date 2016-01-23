@@ -25,9 +25,10 @@ class GyazoSpector
     @endpoint = opts.delete(:endpoint) || DEFAULT_ENDPOINT
     Capybara.default_selector = opts.delete(:selector) || DEFAULT_SELECTOR
 
-    options = DEFAULT_POLTERGEIST_OPTIONS.merge(opts)
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, options)
+      Capybara::Poltergeist::Driver.new(
+        app, DEFAULT_POLTERGEIST_OPTIONS.merge(opts)
+      )
     end
   end
 
@@ -37,32 +38,28 @@ class GyazoSpector
 
   def capture(url, options = {}, &block)
     session.visit(url)
-    block.call(@session) if block_given?
+    block.call(session) if block_given?
     @imagedata = Base64.decode64(session.driver.render_base64(:png, options))
     self
   end
 
   def upload!
-    connection = Faraday.new(site) do |client|
+    Faraday.new(site) do |client|
       client.request :multipart
       client.request :url_encoded
       client.adapter Faraday.default_adapter
-    end
-    payload = { 
+    end.post(
+      endpoint,
       imagedata: Faraday::UploadIO.new(StringIO.new(imagedata), CONTENT_TYPE)
-    }
-    connection.post(endpoint, payload).body
+    ).body
   end
 end
 
 class Nekogiri
   class NekoError < StandardError; end
   def initialize(url)
-    charset = nil
-    html = open(url) do |io|
-      charset = io.charset
-      io.read
-    end
+    html, charset = open(url) { |io| [io.read, io.charset] }
+
     @document = Nokogiri::HTML.parse(html, nil, charset)
   end
 
@@ -128,9 +125,8 @@ module Forecast
     GyazoSpector.new(site: MY_GYAZO).capture(
       'http://tokyo-ame.jwa.or.jp/', selector: 'div#map'
     ) do |page|
-      sleep(1)
       page.execute_script "changeArea('004');"
-      sleep(1)
+      sleep(0.3)
     end.upload!
   end
 end
