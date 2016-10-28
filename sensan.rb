@@ -93,6 +93,10 @@ module Forecast
     weekly: 'div#yjw_week',
   }.freeze
 
+  def self.gyazo_spector
+    @gyazo_spector ||= GyazoSpector.new(site: MY_GYAZO)
+  end
+
   def self.now
     doc = Nekogiri.new(NOW_PAGE)
     temp = doc.first_node(xpath: XPATHS[:temp]) { |node| "#{node.text.strip} ど" }
@@ -104,19 +108,19 @@ module Forecast
   end
 
   def self.today
-    GyazoSpector.new(site: MY_GYAZO).capture(
+    gyazo_spector.capture(
       TARGET_PAGE, selector: SELECTORS[:today]
     ).upload!
   end
 
   def self.tomorrow
-    GyazoSpector.new(site: MY_GYAZO).capture(
+    gyazo_spector.capture(
       TARGET_PAGE, selector: SELECTORS[:tomorrow]
     ).upload!
   end
 
   def self.weekly
-    GyazoSpector.new(site: MY_GYAZO).capture(
+    gyazo_spector.capture(
       TARGET_PAGE, selector: SELECTORS[:weekly]
     ).upload!
   end
