@@ -95,6 +95,7 @@ module Forecast
 
   def self.gyazo_spector
     @gyazo_spector ||= GyazoSpector.new(site: MY_GYAZO)
+    @gyazo_spector
   end
 
   def self.now
@@ -126,7 +127,7 @@ module Forecast
   end
 
   def self.amesh
-    GyazoSpector.new(site: MY_GYAZO).capture(
+    gyazo_spector.capture(
       'http://tokyo-ame.jwa.or.jp/', selector: 'div#map'
     ) do |page|
       page.execute_script "changeArea('004');"
