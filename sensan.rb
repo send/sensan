@@ -1,59 +1,12 @@
 require 'active_support'
 require 'active_support/core_ext'
-require 'ruboty'
 require 'capybara'
 require 'capybara/poltergeist'
 require 'faraday'
-require 'open-uri'
+require 'gyazo_spector'
 require 'nokogiri'
-
-class GyazoSpector
-  CONTENT_TYPE = 'image/png'.freeze
-  DEFAULT_SITE = 'http://gyazo.com'.freeze
-  DEFAULT_ENDPOINT = '/'.freeze
-  DEFAULT_POLTERGEIST_OPTIONS = {
-    js_errors: false,
-    timeout: 1000,
-    debug: false
-  }.freeze
-  DEFAULT_SELECTOR = :css
-
-  attr_reader :site, :endpoint, :session, :imagedata
-
-  def initialize(opts = {})
-    @site = opts.delete(:site) || DEFAULT_SITE
-    @endpoint = opts.delete(:endpoint) || DEFAULT_ENDPOINT
-    Capybara.default_selector = opts.delete(:selector) || DEFAULT_SELECTOR
-
-    Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(
-        app, DEFAULT_POLTERGEIST_OPTIONS.merge(opts)
-      )
-    end
-  end
-
-  def session
-    @session ||= Capybara::Session.new(:poltergeist)
-  end
-
-  def capture(url, options = {}, &block)
-    session.visit(url)
-    block.call(session) if block_given?
-    @imagedata = Base64.decode64(session.driver.render_base64(:png, options))
-    self
-  end
-
-  def upload!
-    Faraday.new(site) do |client|
-      client.request :multipart
-      client.request :url_encoded
-      client.adapter Faraday.default_adapter
-    end.post(
-      endpoint,
-      imagedata: Faraday::UploadIO.new(StringIO.new(imagedata), CONTENT_TYPE)
-    ).body
-  end
-end
+require 'open-uri'
+require 'ruboty'
 
 class Nekogiri
   class NekoError < StandardError; end
@@ -94,7 +47,7 @@ module Forecast
   }.freeze
 
   def self.gyazo_spector
-    @gyazo_spector ||= GyazoSpector.new(site: MY_GYAZO)
+    @gyazo_spector ||= GyazoSpector::Client.new(site: MY_GYAZO)
     @gyazo_spector
   end
 
