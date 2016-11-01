@@ -130,7 +130,7 @@ module Forecast
     gyazo_spector.capture(
       'http://tokyo-ame.jwa.or.jp/', selector: 'div#map'
     ) do |page|
-      page.execute_script "changeArea('004');"
+      page.execute_script "changeArea('511');"
       sleep(0.3)
     end.upload!
   end
