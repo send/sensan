@@ -84,7 +84,7 @@ module Forecast
       'http://tokyo-ame.jwa.or.jp/', selector: 'div#map'
     ) do |page|
       page.execute_script "changeArea('511');"
-      sleep(0.3)
+      sleep(1)
     end.upload!
   end
 end
