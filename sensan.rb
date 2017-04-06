@@ -110,7 +110,7 @@ module Ruboty
         when /ping/i then do_nothing
         when /echo/i then do_nothing
         when /say\s+([[:alnum:]]+)\s+([[:alpha:]]+)\s+(.*)/m
-          say($1.downcase, $2.downcase, $3)
+          say(message, $1.downcase, $2.downcase, $3)
         when /てんき|天気|アメッシュ|あめっしゅ/ then weather(message)
         when /\A(?:何歳|なんさい|いくつ)(?:になったの)?(?:\?|？)/ then how_old(message)
         else
@@ -142,10 +142,10 @@ module Ruboty
       end
 
       ORDER_MAPPING = %w(first second third fourth fifth).freeze
-      def say(nth, weekday, message)
+      def say(message, nth, weekday, text)
         nth = ORDER_MAPPING[nth.to_i - 1] unless ORDER_MAPPING.include?(nth)
         return unless Date.current.__send__("#{nth}_#{weekday}?")
-        message.reply(message)
+        message.reply(text)
       end
 
       def do_nothing
