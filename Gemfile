@@ -1,12 +1,12 @@
 source 'https://rubygems.org'
 
 gem 'activesupport'
-gem 'cabocha', git: 'https://github.com/send/cabocha-ruby.git', branch: 'fixed/building-problems-on-osx'
 gem 'capybara'
 gem 'faraday'
 gem 'gyazo_spector'
 gem 'poltergeist'
 gem 'ruboty-cron'
+gem 'ruboty-echo'
 gem 'ruboty-image'
 gem 'ruboty-redis'
 gem 'ruboty-slack_rtm'
