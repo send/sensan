@@ -7,6 +7,7 @@ require 'gyazo_spector'
 require 'nokogiri'
 require 'open-uri'
 require 'ruboty'
+require 'white_hare'
 
 class Nekogiri
   class NekoError < StandardError; end
@@ -92,9 +93,11 @@ end
 module Ruboty
   module Handlers
     class Sensan < Base
+      using WhiteHare::Monthly
+
       BIRTH_DAY = Date.new(2012, 05 ,05).freeze
 
-      on /(?<text>.+)/, name: :generic, description: 'generic action'
+      on(/(?<text>.+)/, name: :generic, description: 'generic action')
 
       def generic(message)
         handle_message(message)
@@ -105,6 +108,9 @@ module Ruboty
       def handle_message(message)
         case message[:text]
         when /ping/i then do_nothing
+        when /echo/i then do_nothing
+        when /say\s+(?<nth>[[:alnum:]]+)\s+(?<weekday>[[:alpha:]]+)\s+(?<message>.*)/m
+          say(nth.downcase, weekday.downcase, message)
         when /てんき|天気|アメッシュ|あめっしゅ/ then weather(message)
         when /\A(?:何歳|なんさい|いくつ)(?:になったの)?(?:\?|？)/ then how_old(message)
         else
@@ -133,6 +139,13 @@ module Ruboty
 
       def default_action(message)
         message.reply('にゃー')
+      end
+
+      ORDER_MAPPING = %w(first second third fourth fifth).freeze
+      def say(nth, weekday, message)
+        nth = ORDER_MAPPING[nth.to_i - 1] unless ORDER_MAPPING.include?(nth)
+        return if Date.current.__send__("#{nth}_#{weekday}?")
+        message.reply(message)
       end
 
       def do_nothing

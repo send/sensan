@@ -12,6 +12,7 @@ gem 'ruboty-redis'
 gem 'ruboty-slack_rtm'
 gem 'ruboty-train_delay'
 gem 'ruboty-youtube'
+gem 'white_hare'
 
 group :development, :test do
     gem 'pry'
