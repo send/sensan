@@ -109,8 +109,8 @@ module Ruboty
         case message[:text]
         when /ping/i then do_nothing
         when /echo/i then do_nothing
-        when /say\s+(?<nth>[[:alnum:]]+)\s+(?<weekday>[[:alpha:]]+)\s+(?<message>.*)/m
-          say(nth.downcase, weekday.downcase, message)
+        when /say\s+([[:alnum:]]+)\s+([[:alpha:]]+)\s+(.*)/m
+          say($1.downcase, $2.downcase, $3)
         when /てんき|天気|アメッシュ|あめっしゅ/ then weather(message)
         when /\A(?:何歳|なんさい|いくつ)(?:になったの)?(?:\?|？)/ then how_old(message)
         else
@@ -144,7 +144,7 @@ module Ruboty
       ORDER_MAPPING = %w(first second third fourth fifth).freeze
       def say(nth, weekday, message)
         nth = ORDER_MAPPING[nth.to_i - 1] unless ORDER_MAPPING.include?(nth)
-        return if Date.current.__send__("#{nth}_#{weekday}?")
+        return unless Date.current.__send__("#{nth}_#{weekday}?")
         message.reply(message)
       end
 
